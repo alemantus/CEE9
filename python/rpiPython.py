@@ -1,13 +1,11 @@
 import sys
 import time
-#import ISO10368Lib
-import libraries
+import ISO10368Lib
 import paho.mqtt.client as mqtt
 
 # define container id when starting program
 RCDid = sys.argv[1]
 
-#asdasd
 # delcare global variables used in on_message callback
 lowerBound = "" 
 upperBound = ""
@@ -78,15 +76,21 @@ while(1):
 
     global tempList
 
-    if(tempList[0] != "" and tempList[1] != "" and tempList[2] != "" ):
-        # ensures that we only calculate new values on send from ui
-        if (tempList[3] == 1):
-            bitString, Sair, Rair = ISO10368Lib.containerString(tempList[0], tempList[1], tempContainer)
-        if(bitString != "" and Sair != "" and Rair != ""):
-            client.publish("/container"+RCDid+"/bitString", bitString, qos=0, retain=False)
-            client.publish("/container"+RCDid+"/Sair", Sair, qos=0, retain=False)
-            client.publish("/container"+RCDid+"/Rair", Rair, qos=0, retain=False)
-            print(Sair)
+    if(ourTimer >= 5):
+        ourTimer = 0
+        if(tempList[0] != "" and tempList[1] != "" and tempList[2] != "" ):
+            # ensures that we only calculate new values on send from ui
+            if (tempList[3] == 1):
+                bitString, Sair, Rair = ISO10368Lib.containerString(tempList[0], tempList[1], tempContainer)
+            if(bitString != "" and Sair != "" and Rair != ""):
+                client.publish("/container"+RCDid+"/bitString", bitString, qos=0, retain=False)
+                client.publish("/container"+RCDid+"/Sair", Sair, qos=0, retain=False)
+                client.publish("/container"+RCDid+"/Rair", Rair, qos=0, retain=False)
+                print(Sair)
+        
+    else:
+        sleep(0.1)
+        ourTimer =+ 0.1
 
 
     # Blocking call that processes network traffic, dispatches callbacks and
@@ -94,4 +98,4 @@ while(1):
     # Other loop*() functions are available that give a threaded interface and a
     # manual interface.
     client.loop_start()
-    time.sleep(5)
+    #time.sleep(5)

@@ -21,7 +21,7 @@ upperBound = ""
 setPoint = ""
 connectControl = 0
 kickControl = 2
-currentBroker = 0 # 0 = DTU, 1 = our own
+
 tempList = [lowerBound,upperBound,setPoint,kickControl]
 
 tempContainer = -30
@@ -30,17 +30,10 @@ while(1):
 
     # mqtt initialize
     def on_connectDTU(client, userdata, flags, rc):
-        #print("Connected with result code "+str(rc))
-
-        # Subscribing in on_connect() means that if we lose the connection and
-        # reconnect then subscriptions will be renewed.
-
         print("Test - connectDTU")  
         clientDTU.subscribe("EVBE/#")
 
-    # The callback for when a PUBLISH message is received from the server.
     def on_messageDTU(client, userdata, msg):
-
         global tempList
         global currentBroker
         data = UniversalFormat_pb2.Data()
@@ -51,15 +44,9 @@ while(1):
           #  print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
            #     + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
 
-        
-
-
-
     def on_publishDTU(client,userdata,result):
         print("data published \n")
         pass
-
-    
 
     # mqtt initialize
     def on_connectOwn(client, userdata, flags, rc):  
@@ -86,6 +73,8 @@ while(1):
         print("data published \n")
         pass
 
+
+
     if (connectControl == 0):
         ###### Starting DTU broker connection ######
         clientDTU = mqtt.Client()
@@ -98,15 +87,10 @@ while(1):
 
         clientDTU.connect('broker.syslab.dk', 5005, 60)
 
-        
-
-
-
         ###### Starting our broker connection ######
         clientOwn = mqtt.Client()
         clientOwn.on_connect = on_connectOwn
         clientOwn.on_message = on_messageOwn
-
 
         #clientOwn.username_pw_set(username="admin",password="mqtt")
         #clientOwn.connect("87.63.168.126", 1883, 60)
@@ -120,8 +104,6 @@ while(1):
     bitString = ""
     Sair = ""
     Rair = ""
-    connectControl = 1
-
     global tempList
 
     if(tempList[0] != "" and tempList[1] != "" and tempList[2] != "" ):
@@ -134,12 +116,6 @@ while(1):
             clientOwn.publish("/container"+RCDid+"/Rair", Rair, qos=0, retain=False)
             print(Sair)
 
-
-
-    # Blocking call that processes network traffic, dispatches callbacks and
-    # handles reconnecting.
-    # Other loop*() functions are available that give a threaded interface and a
-    # manual interface.
     clientDTU.loop_start()
     clientOwn.loop_start()
     time.sleep(5)

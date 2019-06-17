@@ -10,7 +10,7 @@ def ISOstring(temp):
 
 def containerString(startTime, stopTime, tempContainer):
 
-    if (now.hour > startTime or now.hour < stopTime):
+    if (now.hour > int(startTime) or now.hour < int(stopTime)):
         peak = 1
     else:
         peak = 0
@@ -24,15 +24,15 @@ def containerString(startTime, stopTime, tempContainer):
         RairISO = "0" + ISOstring(Rair)
     elif (tempContainer <= -29):
         tempDesired = -30
-        Sair = -25
-        Rair = -25
+        Sair = -30
+        Rair = -30
         tempISO = "0" + ISOstring(tempDesired)
         SairISO = "0" + ISOstring(Sair)
         RairISO = "0" + ISOstring(Rair)
     else:
         tempDesired = -30
-        Sair = 75
-        Rair = 75
+        Sair = -75
+        Rair = -75
         tempISO = "0" + ISOstring(tempDesired)
         SairISO = ISOstring(Sair)
         RairISO = ISOstring(Rair)

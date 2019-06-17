@@ -29,91 +29,93 @@ tempContainer = -30
 while(1):
 
     # mqtt initialize
-    def on_connect(client, userdata, flags, rc):
+    def on_connectDTU(client, userdata, flags, rc):
         #print("Connected with result code "+str(rc))
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
 
-        client.subscribe("/container"+RCDid+"/lowerBound")
-        client.subscribe("/container"+RCDid+"/upperBound")
-        client.subscribe("/container"+RCDid+"/setPoint")
-        client.subscribe("/container"+RCDid+"/kick")
-
-        client.subscribe("EVBE/#")
+        print("Test - connectDTU")  
+        clientDTU.subscribe("EVBE/#")
 
     # The callback for when a PUBLISH message is received from the server.
-    def on_message(client, userdata, msg):
+    def on_messageDTU(client, userdata, msg):
 
         global tempList
         global currentBroker
+        data = UniversalFormat_pb2.Data()
+        data.ParseFromString(msg.payload)
 
-        if(currentBroker == 0):
-            data = UniversalFormat_pb2.Data()
-            data.ParseFromString(msg.payload)
-
-            print('Value type: ' + data.WhichOneof('value'))
-            print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
-                + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
+        #if(data.channel == "meter_current_phase_2"):
+         #   print('Value type: ' + data.WhichOneof('value'))
+          #  print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
+           #     + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
 
         
 
-        elif(currentBroker == 1):
-            if(str(msg.topic) == "/container"+RCDid+"/lowerBound"):
-                tempList[0] = int(msg.payload)
-                tempList[3] = 0
-            elif(str(msg.topic) == "/container"+RCDid+"/upperBound"):
-                tempList[1] = int(msg.payload)
-                tempList[3] = 0
-            elif(str(msg.topic) == "/container"+RCDid+"/setPoint"):
-                tempList[2] = int(msg.payload)
-                tempList[3] = 0
-            elif(str(msg.topic) == "/container"+RCDid+"/kick"):
-                tempList[3] = 1
 
 
-    def on_publish(client,userdata,result):
+    def on_publishDTU(client,userdata,result):
         print("data published \n")
         pass
 
+    
 
-    global currentBroker
+    # mqtt initialize
+    def on_connectOwn(client, userdata, flags, rc):  
+        # print("Test - connectOwn")      
+        clientOwn.subscribe("/container"+RCDid+"/lowerBound")
+        clientOwn.subscribe("/container"+RCDid+"/upperBound")
+        clientOwn.subscribe("/container"+RCDid+"/setPoint")
+        clientOwn.subscribe("/container"+RCDid+"/kick")
 
-    ###### Starting DTU broker connection ######
-    client = mqtt.Client()
-    client.tls_set()
-    #client.tls_insecure_set(True)
-    client.username_pw_set(token, '')
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.reconnect_delay_set(1, 120)
+    def on_messageOwn(client, userdata, msg):    
+        if(str(msg.topic) == "/container"+RCDid+"/lowerBound"):
+            tempList[0] = int(msg.payload)
+            tempList[3] = 0
+        elif(str(msg.topic) == "/container"+RCDid+"/upperBound"):
+            tempList[1] = int(msg.payload)
+            tempList[3] = 0
+        elif(str(msg.topic) == "/container"+RCDid+"/setPoint"):
+            tempList[2] = int(msg.payload)
+            tempList[3] = 0
+        elif(str(msg.topic) == "/container"+RCDid+"/kick"):
+            tempList[3] = 1
 
-    client.connect('broker.syslab.dk', 5005, 60)
+    def on_publishOwn(client,userdata,result):
+        print("data published \n")
+        pass
 
-    currentBroker = 0
+    if (connectControl == 0):
+        ###### Starting DTU broker connection ######
+        clientDTU = mqtt.Client()
+        clientDTU.tls_set()
+        #client.tls_insecure_set(True)
+        clientDTU.username_pw_set(token, '')
+        clientDTU.on_connect = on_connectDTU
+        clientDTU.on_message = on_messageDTU
+        clientDTU.reconnect_delay_set(1, 120)
 
-    client.loop_start()
+        clientDTU.connect('broker.syslab.dk', 5005, 60)
+
+        
 
 
 
-    # save important variables
+        ###### Starting our broker connection ######
+        clientOwn = mqtt.Client()
+        clientOwn.on_connect = on_connectOwn
+        clientOwn.on_message = on_messageOwn
 
 
+        #clientOwn.username_pw_set(username="admin",password="mqtt")
+        #clientOwn.connect("87.63.168.126", 1883, 60)
 
-    client.loop_stop()
+        clientOwn.username_pw_set(username="jfccfsnl",password="a95j7N6GPemj")
+        clientOwn.connect("m24.cloudmqtt.com", 10832, 60)
 
-    ###### Starting our broker connection ######
-    client = mqtt.Client()
-    client.on_connect = on_connect
-    client.on_message = on_message
-
-    client.username_pw_set(username="jfccfsnl",password="a95j7N6GPemj")
-
-    client.connect("m24.cloudmqtt.com", 10832, 60)
-
-    currentBroker = 0
-
-    client.loop_start()
+        connectControl = 1
+    
 
     bitString = ""
     Sair = ""
@@ -127,9 +129,9 @@ while(1):
         if (tempList[3] == 1):
             bitString, Sair, Rair = ISO10368Lib.containerString(tempList[0], tempList[1], tempContainer)
         if(bitString != "" and Sair != "" and Rair != ""):
-            client.publish("/container"+RCDid+"/bitString", bitString, qos=0, retain=False)
-            client.publish("/container"+RCDid+"/Sair", Sair, qos=0, retain=False)
-            client.publish("/container"+RCDid+"/Rair", Rair, qos=0, retain=False)
+            clientOwn.publish("/container"+RCDid+"/bitString", bitString, qos=0, retain=False)
+            clientOwn.publish("/container"+RCDid+"/Sair", Sair, qos=0, retain=False)
+            clientOwn.publish("/container"+RCDid+"/Rair", Rair, qos=0, retain=False)
             print(Sair)
 
 
@@ -138,5 +140,6 @@ while(1):
     # handles reconnecting.
     # Other loop*() functions are available that give a threaded interface and a
     # manual interface.
-    client.loop_stop()
-    #time.sleep(5)
+    clientDTU.loop_start()
+    clientOwn.loop_start()
+    time.sleep(5)

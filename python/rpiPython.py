@@ -1,8 +1,9 @@
-# DTU dependencies
+### DTU dependencies
 import logging, UniversalFormat_pb2
 from google.protobuf.json_format import MessageToJson
 logging.basicConfig(level=logging.INFO)
-#
+
+###
 
 import sys
 import time
@@ -30,7 +31,7 @@ while(1):
 
     # mqtt initialize
     def on_connectDTU(client, userdata, flags, rc):
-        print("Test - connectDTU")  
+        print("Test - connectDTU halo")  
         clientDTU.subscribe("EVBE/#")
 
     def on_messageDTU(client, userdata, msg):
@@ -39,10 +40,11 @@ while(1):
         data = UniversalFormat_pb2.Data()
         data.ParseFromString(msg.payload)
 
-        #if(data.channel == "meter_current_phase_2"):
-         #   print('Value type: ' + data.WhichOneof('value'))
-          #  print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
-           #     + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
+        if(data.channel == "meter_current_phase_2"):
+            print('Value type: ' + data.WhichOneof('value'))
+            
+            print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
+                    + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
 
     def on_publishDTU(client,userdata,result):
         print("data published \n")

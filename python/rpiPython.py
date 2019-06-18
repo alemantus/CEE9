@@ -24,27 +24,46 @@ connectControl = 0
 kickControl = 2
 
 tempList = [lowerBound,upperBound,setPoint,kickControl]
-
+Deif = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 tempContainer = -30
 
 while(1):
 
     # mqtt initialize
     def on_connectDTU(client, userdata, flags, rc):
-        print("Test - connectDTU halo")  
+        print("Test - connectDTU halo")
+
         clientDTU.subscribe("EVBE/#")
 
     def on_messageDTU(client, userdata, msg):
         global tempList
         global currentBroker
+        global Deif
         data = UniversalFormat_pb2.Data()
         data.ParseFromString(msg.payload)
 
-        if(data.channel == "meter_current_phase_2"):
-            print('Value type: ' + data.WhichOneof('value'))
-            
-            print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
-                    + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
+            #Gør så vi kun modtager effekt
+        if(data.channel == "meter_active_power_sum"):
+           # Deifstring = str(data.meta['unit_name']) + ' ' + str(data.double)
+           
+            ## Gør så vi kun modtager information fra DEIF
+            if(data.meta['unit_name'][0:4] == "Deif"):
+                DiefnrString = data.meta['unit_name']
+                #Tager DIEF nummeret og laver det til int
+                Diefnr = int(DiefnrString[7:8])
+                Power = data.double
+                #Sætter power in i et array, hvor array nr er DEIF nr.
+                Deif[Diefnr] = Power
+                #print(Diefnr)
+                #print(Deif[Diefnr])
+                Effekttotal = sum(i for i in Deif)
+                a = [1, 2, 3, 4, 5]
+                b = sum(i for i in a)
+                print(b)
+                print(Effekttotal)
+                 ## print('Value type: ' + data.WhichOneof('value'))
+                ## print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
+                 ##   + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
 
     def on_publishDTU(client,userdata,result):
         print("data published \n")
@@ -116,7 +135,7 @@ while(1):
             clientOwn.publish("/container"+RCDid+"/bitString", bitString, qos=0, retain=False)
             clientOwn.publish("/container"+RCDid+"/Sair", Sair, qos=0, retain=False)
             clientOwn.publish("/container"+RCDid+"/Rair", Rair, qos=0, retain=False)
-            print(Sair)
+            #print(Sair)
 
     clientDTU.loop_start()
     clientOwn.loop_start()

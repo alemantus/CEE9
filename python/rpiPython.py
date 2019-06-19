@@ -28,18 +28,15 @@ tempList = [lowerBound,upperBound,setPoint,kickControl]
 
 tempContainer = -30
 
-#temp sensor
 
-#bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
-#bme76.set_mode(bme280.MODE_FORCED)
 
-#bme77 = bme280.Bme280(i2c_bus=1,sensor_address=0x77)
-#bme77.set_mode(bme280.MODE_FORCED)
+
 
 while(1):
 
-    # mqtt initialize
+    ### Callbacks for DTU broker ###
     def on_connectDTU(client, userdata, flags, rc):
+        print("Connected to DTU broker")
         clientOwn.publish("/container"+RCDid+"/on_connectOwn", "Connected to Own", qos=0, retain=False)  
  
         clientDTU.subscribe("EVBE/#")
@@ -60,9 +57,9 @@ while(1):
         print("data published \n")
         pass
 
-    # mqtt initialize
+    ### Callbacks for DTU broker ###
     def on_connectOwn(client, userdata, flags, rc):  
-        #print("Test - connectOwn")  
+        print("Connected to own broker") 
         clientOwn.publish("/container"+RCDid+"/on_connectOwn", "Connected to Own", qos=0, retain=False)  
 
         clientOwn.subscribe("/container"+RCDid+"/lowerBound")
@@ -132,24 +129,28 @@ while(1):
         bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
         bme76.set_mode(bme280.MODE_FORCED)
         t1, p1, h1 = bme76.get_data()
+
+        #bme77 = bme280.Bme280(i2c_bus=1,sensor_address=0x77)
+        #bme77.set_mode(bme280.MODE_FORCED)
         #t2, p2, h2 = bme77.get_data()
         print(round(t1,2))
         clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
         #clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2,2), qos=0, retain=False)
         if(tempList[0] != "" and tempList[1] != "" and tempList[2] != "" and tempList[3] == 1):
+            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/lowerBound, msg.payload    ="+str(tempList[0]), qos=0, retain=False)  
+            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/upperBound, msg.payload="+str(tempList[1]), qos=0, retain=False)  
+            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/setPoint, msg.payload="+str(tempList[2]), qos=0, retain=False)  
+            
             bitString, Sair, Rair = ISO10368Lib.containerString(tempList[0], tempList[1], tempContainer)
             tempList[3] = 0
+            
             if(bitString != "" and Sair != "" and Rair != ""):
                 clientOwn.publish("/container"+RCDid+"/bitString", bitString, qos=0, retain=False)
                 clientOwn.publish("/container"+RCDid+"/Sair", Sair, qos=0, retain=False)
                 clientOwn.publish("/container"+RCDid+"/Rair", Rair, qos=0, retain=False)
 
-            recieved =  "\n topic=/container"+RCDid+"/lowerBound, msg.payload="+str(tempList[0])+ "\n" \
-                "topic=/container"+RCDid+"/upperBound, msg.payload="+str(tempList[1]) + "\n" \
-                    "topic=/container"+RCDid+"/setPoint, msg.payload="+str(tempList[2]) + "\n" 
-
-            clientOwn.publish("/container"+RCDid+"/recieved", recieved, qos=0, retain=False)  
-                #print(Sair)
+        else:
+            tempList[3] = 0
         
         
 

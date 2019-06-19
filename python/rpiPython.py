@@ -17,7 +17,7 @@ RCDid = sys.argv[1]
 token = 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJSRkRFTU8iLCJpYXQiOjE1NTYxNDMyMDAsImV4cCI6MTU2NzI4ODgwMCwiaXNzIjoib3JkYSIsImF1dGhvcml0aWVzIjoiVVNFUixWSVMiLCJhZGRpdGlvbmFsIjoiRVZCRSJ9.DuLZSACASb5sjfb_j6_OfZpibQxXAwy1G1JbQIczwlN2tv5TxlFx7u8PTEuP8Q-BSNoI8MY-iDoDKRcG4RXr5SeLpdXe9V0mSkQRgjdSaKt7jwN10vKC-ydXYNZ2Y4bWjv__-3cJKVl8Q8n3BZ5RnduprIwVfwZ3pOqUyq-mRRWJTOZfwBsqQfnjHUY8hgDmkCCJrKPldpV5_m6AljOFbszGFmY9sufYvQuXUTEtNboAp_xChQTNyJG9fEXhCc_Bks-qOoA5lHJoP-4WMMZZ4cwNBX78oHp__aSQkZD6oKHXyB-Sdvvs8QuobmdNHe-Qi-xjHsXOvVQXxvd8pb2hRA'
 
 # delcare global variables used in on_message callback
-lowerBound = "" 
+lowerBound = ""
 upperBound = ""
 setPoint = ""
 connectControl = 0
@@ -25,7 +25,7 @@ kickControl = 0
 ourCounter = 0
 
 tempList = [lowerBound,upperBound,setPoint,kickControl]
-
+Deif = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 tempContainer = -30
 
 
@@ -37,37 +37,55 @@ while(1):
     ### Callbacks for DTU broker ###
     def on_connectDTU(client, userdata, flags, rc):
         print("Connected to DTU broker")
-        clientOwn.publish("/container"+RCDid+"/on_connectOwn", "Connected to Own", qos=0, retain=False)  
- 
+        clientOwn.publish("/container"+RCDid+"/on_connectOwn", "Connected to Own", qos=0, retain=False)
+
         clientDTU.subscribe("EVBE/#")
 
     def on_messageDTU(client, userdata, msg):
         global tempList
         global currentBroker
+        global Deif
         data = UniversalFormat_pb2.Data()
         data.ParseFromString(msg.payload)
 
-        #if(data.channel == "meter_current_phase_2"):
-            #print('Value type: ' + data.WhichOneof('value'))
-            
-            #print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
-                   # + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
+            #Gør så vi kun modtager effekt
+        if(data.channel == "meter_active_power_sum"):
+           # Deifstring = str(data.meta['unit_name']) + ' ' + str(data.double)
+
+            ## Gør så vi kun modtager information fra DEIF
+            if(data.meta['unit_name'][0:4] == "Deif"):
+                DiefnrString = data.meta['unit_name']
+                #Tager DIEF nummeret og laver det til int
+                Diefnr = int(DiefnrString[7:8])
+                Power = data.double
+                #Sætter power in i et array, hvor array nr er DEIF nr.
+                Deif[Diefnr] = Power
+                #print(Diefnr)
+                #print(Deif[Diefnr])
+                Effekttotal = sum(i for i in Deif)
+                a = [1, 2, 3, 4, 5]
+                b = sum(i for i in a)
+                print(b)
+                print(Effekttotal)
+                 ## print('Value type: ' + data.WhichOneof('value'))
+                ## print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
+                 ##   + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
 
     def on_publishDTU(client,userdata,result):
         print("data published \n")
         pass
 
     ### Callbacks for DTU broker ###
-    def on_connectOwn(client, userdata, flags, rc):  
-        print("Connected to own broker") 
-        clientOwn.publish("/container"+RCDid+"/on_connectOwn", "Connected to Own", qos=0, retain=False)  
+    def on_connectOwn(client, userdata, flags, rc):
+        print("Connected to own broker")
+        clientOwn.publish("/container"+RCDid+"/on_connectOwn", "Connected to Own", qos=0, retain=False)
 
         clientOwn.subscribe("/container"+RCDid+"/lowerBound")
         clientOwn.subscribe("/container"+RCDid+"/upperBound")
         clientOwn.subscribe("/container"+RCDid+"/setPoint")
         clientOwn.subscribe("/container"+RCDid+"/kick")
 
-    def on_messageOwn(client, userdata, msg):   
+    def on_messageOwn(client, userdata, msg):
         global kickControl
 
         if(str(msg.topic) == "/container"+RCDid+"/lowerBound"):
@@ -113,7 +131,7 @@ while(1):
         clientOwn.connect("m24.cloudmqtt.com", 10832, 60)
 
         connectControl = 1
-    
+
 
     bitString = ""
     Sair = ""
@@ -123,7 +141,7 @@ while(1):
 
 
 
-    while(tempList[3] == 1 or ourCounter >= 5): 
+    while(tempList[3] == 1 or ourCounter >= 5):
         ourCounter = 0
 
         bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
@@ -137,13 +155,13 @@ while(1):
         clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
         #clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2,2), qos=0, retain=False)
         if(tempList[0] != "" and tempList[1] != "" and tempList[2] != "" and tempList[3] == 1):
-            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/lowerBound, msg.payload    ="+str(tempList[0]), qos=0, retain=False)  
-            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/upperBound, msg.payload="+str(tempList[1]), qos=0, retain=False)  
-            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/setPoint, msg.payload="+str(tempList[2]), qos=0, retain=False)  
-            
+            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/lowerBound, msg.payload    ="+str(tempList[0]), qos=0, retain=False)
+            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/upperBound, msg.payload="+str(tempList[1]), qos=0, retain=False)
+            clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/setPoint, msg.payload="+str(tempList[2]), qos=0, retain=False)
+
             bitString, Sair, Rair = ISO10368Lib.containerString(tempList[0], tempList[1], tempContainer)
             tempList[3] = 0
-            
+
             if(bitString != "" and Sair != "" and Rair != ""):
                 clientOwn.publish("/container"+RCDid+"/bitString", bitString, qos=0, retain=False)
                 clientOwn.publish("/container"+RCDid+"/Sair", Sair, qos=0, retain=False)
@@ -151,8 +169,8 @@ while(1):
 
         else:
             tempList[3] = 0
-        
-        
+
+
 
     clientDTU.loop_start()
     clientOwn.loop_start()

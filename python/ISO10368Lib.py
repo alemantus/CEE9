@@ -2,8 +2,6 @@ import datetime
 
 now = datetime.datetime.now()
 
-
-test = "hej"
 def ISOstring(temp):
     tempISOdouble = (125 + temp)/0.05
     tempISO = round(tempISOdouble)

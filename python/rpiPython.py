@@ -9,6 +9,7 @@ import sys
 import time
 import ISO10368Lib
 import paho.mqtt.client as mqtt
+import algo
 
 # define container id when starting program
 RCDid = sys.argv[1]
@@ -27,6 +28,7 @@ tempList = [lowerBound,upperBound,setPoint,kickControl]
 Deif = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 tempContainer = -30
 
+
 while(1):
 
     # mqtt initialize
@@ -39,6 +41,7 @@ while(1):
         global tempList
         global currentBroker
         global Deif
+        global Effekttotal
         data = UniversalFormat_pb2.Data()
         data.ParseFromString(msg.payload)
 
@@ -56,14 +59,17 @@ while(1):
                 Deif[Diefnr] = Power
                 #print(Diefnr)
                 #print(Deif[Diefnr])
+           
+               # print(algo.Powermonitor(Effekttotal))
+                #Summer alle effekterne fra de 7 målere
                 Effekttotal = sum(i for i in Deif)
-                a = [1, 2, 3, 4, 5]
-                b = sum(i for i in a)
-                print(b)
+                
                 print(Effekttotal)
                  ## print('Value type: ' + data.WhichOneof('value'))
                 ## print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
                  ##   + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
+    
+         
 
     def on_publishDTU(client,userdata,result):
         print("data published \n")

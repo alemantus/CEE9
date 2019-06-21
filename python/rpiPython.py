@@ -8,7 +8,10 @@ import bme280
 import sys
 import time
 import ISO10368Lib
+import algo
 import paho.mqtt.client as mqtt
+import datetime
+now = datetime.datetime.now()
 
 # define container id when starting program
 RCDid = sys.argv[1]
@@ -23,14 +26,22 @@ setPoint = ""
 connectControl = 0
 kickControl = 0
 ourCounter = 0
+StartTime = 0
+
+Switch = 1
+preHour = 0
+dag = 1
+peakM = [False] * 12
+peakA = [False] * 12
 
 tempList = [lowerBound,upperBound,setPoint,kickControl]
 Deif = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 tempContainer = -30
 
-
-
-
+Effekttime = [0] * 60
+Effektdag = [0] * 12
+peakStart = [0] * 7
+peakEnd = [0] * 7
 
 while(1):
 
@@ -45,6 +56,8 @@ while(1):
         global tempList
         global currentBroker
         global Deif
+        global Effekttotal
+
         data = UniversalFormat_pb2.Data()
         data.ParseFromString(msg.payload)
 
@@ -63,9 +76,7 @@ while(1):
                 #print(Diefnr)
                 #print(Deif[Diefnr])
                 Effekttotal = sum(i for i in Deif)
-                a = [1, 2, 3, 4, 5]
-                b = sum(i for i in a)
-                print(b)
+
                 print(Effekttotal)
                  ## print('Value type: ' + data.WhichOneof('value'))
                 ## print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
@@ -138,21 +149,71 @@ while(1):
     Rair = ""
     global tempList
     global ourCounter
-
+    global Effekttime 
+    global Effektdag
 
 
     while(tempList[3] == 1 or ourCounter >= 5):
+        Middagthresh = 35000
+        Effekttime[now.minute] = Effekttotal
+        Effektdag = [23000, 23000, 23000, 45000, 45000, 45000, 45000, 45000, 45000, 23000, 23000, 23000]
+        if(Switch == 1):
+            preHour = now.hour
+            Switch = 0
+
+        if(now.hour != preHour):
+            Sumeffekttime = sum(i for i in  Effekttime)
+            Effektdag[preHour] =  Sumeffekttime
+            preHour = now.hour 
+        
+        y = 0
+        for x in Effektdag:
+            if (x > Middagthresh):
+                peakM[y] = True
+            else:
+                peakM[y] = False
+            y = y + 1
+
+
+        res = [i for i, val in enumerate(peak) if val]
+
+        peakStart[dag] = res[0] 
+        peakEnd[dag] = res[len(res) -1]
+
+
+        print(peakStart[dag])
+        print(peakEnd[dag])
+
+
+        
+
+
+        
+                
+    
+       # print(algo.Powermonitor(Effekttotal,preHour))
+
+        
+       # if(preHour != now.hour)     
+        #    Sumeffekttime = sum(i for i in Effekttimer)
+           
+        
+
+
+
+
+        ##
         ourCounter = 0
 
-        bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
-        bme76.set_mode(bme280.MODE_FORCED)
-        t1, p1, h1 = bme76.get_data()
+        #bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
+        #bme76.set_mode(bme280.MODE_FORCED)
+        #t1, p1, h1 = bme76.get_data()
 
         #bme77 = bme280.Bme280(i2c_bus=1,sensor_address=0x77)
         #bme77.set_mode(bme280.MODE_FORCED)
         #t2, p2, h2 = bme77.get_data()
-        print(round(t1,2))
-        clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
+        #print(round(t1,2))
+        #clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
         #clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2,2), qos=0, retain=False)
         if(tempList[0] != "" and tempList[1] != "" and tempList[2] != "" and tempList[3] == 1):
             clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/lowerBound, msg.payload    ="+str(tempList[0]), qos=0, retain=False)

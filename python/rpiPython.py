@@ -11,7 +11,6 @@ import ISO10368Lib
 import algo
 import paho.mqtt.client as mqtt
 import datetime
-now = datetime.datetime.now()
 
 # define container id when starting program
 RCDid = sys.argv[1]
@@ -30,20 +29,27 @@ StartTime = 0
 
 Switch = 1
 preHour = 0
-dag = 1
-peakM = [False] * 12
-peakA = [False] * 12
+preSek = 0
+dag = 2
+peakM = [False] * 24
+peakA = [False] * 24
 
 tempList = [lowerBound,upperBound,setPoint,kickControl]
 Deif = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-tempContainer = -30
+tempContainer = -23
 
 Effekttime = [0] * 60
-Effektdag = [0] * 12
-peakStart = [0] * 7
-peakEnd = [0] * 7
+Effektdag = [0] * 24
+# Værdierne om peak tidspunkter er aflæst fra grafen for de første to dage
+MpeakStart = [0, 15, 13, 0, 0, 0, 0, 0, 0]
+MpeakEnd = [0, 1, 2, 0, 0, 0, 0, 0, 0]
+ApeakStart = [0, 20, 20, 0, 0, 0, 0, 0, 0]
+ApeakEnd = [0, 22, 0, 0, 0, 0, 0, 0, 0]
+StartPeakshaving = 0
+Testcounter = 0
 
 while(1):
+    now = datetime.datetime.now()
 
     ### Callbacks for DTU broker ###
     def on_connectDTU(client, userdata, flags, rc):
@@ -76,8 +82,7 @@ while(1):
                 #print(Diefnr)
                 #print(Deif[Diefnr])
                 Effekttotal = sum(i for i in Deif)
-
-                print(Effekttotal)
+                #print(Effekttotal)
                  ## print('Value type: ' + data.WhichOneof('value'))
                 ## print(str(data.timestamp) + ' ' + data.meta['unit_name'] \
                  ##   + '(' + data.channel + '): ' + str(data.double) + ' ' + data.unit)
@@ -154,54 +159,121 @@ while(1):
 
 
     while(tempList[3] == 1 or ourCounter >= 5):
+        # Sætter tærsklen for hvornår der er peak-strømforbrug middag/aften 
         Middagthresh = 35000
+        Aftenthresh = 42000
+        # Sætter effektmålinger ind for hvertminut 
         Effekttime[now.minute] = Effekttotal
-        Effektdag = [23000, 23000, 23000, 45000, 45000, 45000, 45000, 45000, 45000, 23000, 23000, 23000]
+        # Test vektor: Starter kl 00. d. 5/7 - slutter kl. 23 d 5/7
+        Effektdag = [30000, 40000, 15000, 75000, 4000, 4000, 4000, 4000, 5000, 25000, 25000, 27000, 36000, 40000, 40000, 44000, 40000, 44000, 44000, 40000, 43000, 47000, 45000, 45000]
+        
+        # Gemmer hvilken time programmet startes i
         if(Switch == 1):
             preHour = now.hour
+            preSek = now.second 
             Switch = 0
 
+        # Summer de 60 effektmålinger på en time og gemmer resultatet i en liste med elementnummer = den pågældende time.   
         if(now.hour != preHour):
             Sumeffekttime = sum(i for i in  Effekttime)
             Effektdag[preHour] =  Sumeffekttime
             preHour = now.hour 
+               
+
+        #Laver liste på for middag/aften der indeholder peak-strømforbrugstimer i form af true/false for de valgte tidsrum 
+        # Dette skal gøres når et nyt døgn starter (If statementet slås fra under test) 
+        #if (now.hour == 00):
+        if(True == True):
+            y = 0
+            z = 0
+            for x in Effektdag:
+                if (x > Middagthresh and (y > 11 and y < 15)):
+                    peakM[y] = True
+                else:
+                    peakM[y] = False
+                y = y + 1
+
+            for x in Effektdag:
+                if (x > Aftenthresh and (z > 19 and z < 24)):
+                    peakA[z] = True
+                else:
+                    peakA[z] = False
+                z = z + 1  
+
+            #Liste der indeholder time-nummeret for de timer der er peak (peak=true) for middag/aften.
+            resM = [i for i, val in enumerate(peakM) if val]
+            resA = [i for i, val in enumerate(peakA) if val]
+
+
+            # Lister på 8, der indeholder start og sluttidspunt for middag peaktimer.
+            # Førte dag er ikke brugbar  
+            if (dag != 1):
+                MpeakStart[dag] = resM[0] 
+                MpeakEnd[dag] = resM[len(resM) -1]
+
+            #Lister på 8, der indeholder start og sluttidspunt for aften peaktimer 
+            # Første dag kan godt bruges her 
+            ApeakStart[dag] = resA[0] 
+            ApeakEnd[dag] = resA[len(resA) -1]
+            
+
+            #Opdaterer dagen når klokken slår 00. 
+            if (now.hour == 00):
+                dag = dag + 1
+
+        # Sætter tidspunktet for hvornår containeren skal køle til -30 grader.
+        # Dette skal ske 1 time før peak-hour for den foregående dag. 
+        # Dag 1 og 2 er fastsat fra grafen og ikke fra forrige dag. 
+        if (dag == 1):
+            MstartCool = MpeakStart[1] - 1
+            AstartCool = ApeakStart[1] - 1 
+        elif (dag == 2):
+            MstartCool = MpeakStart[2] - 1
+            AstartCool = ApeakStart[2] - 1
+        else : 
+            MstartCool = MpeakStart[dag-1] - 1
+            AstartCool = ApeakStart[dag-1] - 1 
+
+
+        # Betsemmer hvornår peak-shavingen skal begynde når containeren har nået -30 grader.  
+        # Det skal den når effektmålingen er over middags/aften tærsklen og det respektive tidsrum er nået
+        # Skal være slået fra under eksamendemo.  
+
+        #if (Effekttotal > Middagthresh and (now.hour > MstartCool + 1) and (now.hour < MstartCool + 5)):
+        #    StartPeakshaving = 1    
+        #elif (Effekttotal > Aftenthresh and (now.hour > AstartCool + 1) and (now.hour < AstartCool + 5)):
+        #    StartPeakshaving = 1
+        #else :
+        #    StartPeakshaving = 0      
+
         
-        y = 0
-        for x in Effektdag:
-            if (x > Middagthresh):
-                peakM[y] = True
-            else:
-                peakM[y] = False
-            y = y + 1
+# KODE TIL EKSAMENS DEMONSTRAION 
+        # Counter der skal lave timer til sekunder 
+        if (preSek != now.second and Testcounter < 23):
+            Testcounter = Testcounter + 1
+            preSek = now.second 
+        elif (Testcounter == 23):
+            Testcounter = 0    
 
 
-        res = [i for i, val in enumerate(peak) if val]
+        # StartPeakshave variablen starter peak shaving når -30 grader er nået og effekten er over middag/aften threshhold
+        # Gør også så containeren maks kan være slukket 3 timer ad gangen. 
+        if (Effektdag[Testcounter] > Middagthresh and (Testcounter >= MstartCool + 1) and (Testcounter < MstartCool + 4)):
+            StartPeakshaving = 1    
+        elif (Effektdag[Testcounter] > Aftenthresh and (Testcounter >= AstartCool + 1) and (Testcounter < AstartCool + 4)):
+            StartPeakshaving = 1
+        else :
+            StartPeakshaving = 0  
 
-        peakStart[dag] = res[0] 
-        peakEnd[dag] = res[len(res) -1]
+        # Meget simpel umulator af temeraturen i containeren 
+        if (StartPeakshaving == 1):
+            tempContainer = -30 
+        else :
+            tempContainer = -20         
 
-
-        print(peakStart[dag])
-        print(peakEnd[dag])
-
-
+        #Sender informationerne til ISOstring hvor tilstandsændringer sker 
+        ISOstring = ISO10368Lib.containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Testcounter)
         
-
-
-        
-                
-    
-       # print(algo.Powermonitor(Effekttotal,preHour))
-
-        
-       # if(preHour != now.hour)     
-        #    Sumeffekttime = sum(i for i in Effekttimer)
-           
-        
-
-
-
-
         ##
         ourCounter = 0
 

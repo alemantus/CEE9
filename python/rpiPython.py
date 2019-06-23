@@ -8,7 +8,6 @@ import bme280
 import sys
 import time
 import ISO10368Lib
-import algo
 import paho.mqtt.client as mqtt
 import datetime
 

@@ -2,7 +2,7 @@ import datetime
 from gpiozero import LED
 
 now = datetime.datetime.now()
-
+Control = 0
 led18 = LED(17)
 led30 = LED(18)
 ledOp = LED(27)
@@ -16,7 +16,7 @@ def ISOstring(temp):
     return bin(tempISO).replace('0b', '').zfill(8)
 
 
-def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Testcounter):
+def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Testcounter, Manuel, ControlManual):
     #Bestemmer hvornår containeren skal køle til -30 grader.     
     #if (now.hour >= int(MstartCool) and now.hour <= int(MstartCool) + 1):
     #    Startcool = 1
@@ -31,11 +31,14 @@ def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Tes
     elif (Testcounter >= int(AstartCool) and Testcounter <= int(AstartCool) + 1):
         Startcool = 1
     else:
-        Startcool = 0    
+        Startcool = 0
+    
+    
+
 
     print("Klokken er:" + " " + str(Testcounter)) 
 
-    if(StartPeakshaving == 1):
+    if(StartPeakshaving == 1 and Manuel == 0):
         tempDesired = -20
         Sair = -25
         Rair = -25
@@ -49,19 +52,19 @@ def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Tes
         led30.off()
         ledNed.on()
         ledOp.off()
-    elif (tempContainer <= -30):
-        tempDesired = -30
-        Sair = -30
-        Rair = -30
-        tempISO = "0" + ISOstring(tempDesired)
+    elif (Manuel == 1):
+        tempDesired = -20
+        Sair = -25
+        Rair = -25
+        tempISO = ISOstring(tempDesired)
         SairISO = "0" + ISOstring(Sair)
         RairISO = "0" + ISOstring(Rair)
         # LED skal lyse i stedet for printout 
-        test2 = "Containertemeraturen holdes på -30 grader"
-        print(test2)
+        test4 = "Containeren holdes på -18 grader (Algoritme frakoblet)"
+        print(test4)
         led18.off()
-        led30.on()
-        ledNed.off()
+        led30.off()
+        ledNed.on()
         ledOp.off()
     elif (Startcool == 1):
         tempDesired = -30
@@ -76,7 +79,22 @@ def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Tes
         led18.off()
         led30.off()
         ledNed.off()
-        ledOp.on()
+        ledOp.on() 
+        Startcool = 0  
+    elif (tempContainer <= -30):
+        tempDesired = -30
+        Sair = -30
+        Rair = -30
+        tempISO = "0" + ISOstring(tempDesired)
+        SairISO = "0" + ISOstring(Sair)
+        RairISO = "0" + ISOstring(Rair)
+        # LED skal lyse i stedet for printout 
+        test2 = "Containertemeraturen holdes på -30 grader"
+        print(test2)
+        led18.off()
+        led30.on()
+        ledNed.off()
+        ledOp.off()
     else :
         tempDesired = -20
         Sair = -25
@@ -85,8 +103,8 @@ def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Tes
         SairISO = "0" + ISOstring(Sair)
         RairISO = "0" + ISOstring(Rair)
         # LED skal lyse i stedet for printout 
-        test4 = "Containeren holdes på -18 grader (Normal tilstand)"
-        print(test4)
+        test5 = "Containeren holdes på -18 grader (Normal tilstand)"
+        print(test5)
         led18.on()
         led30.off()
         ledNed.off()

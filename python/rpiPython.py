@@ -25,7 +25,9 @@ connectControl = 0
 kickControl = 0
 ourCounter = 0
 StartTime = 0
+# Når manual = 0 så kører algoritmen
 manual = 0
+ControlManual = [0] * 24
 
 Switch = 1
 preHour = 0
@@ -250,29 +252,41 @@ while(1):
             preSek = now.second 
         elif (Testcounter == 23):
             Testcounter = 0    
+        
+        # Gemmer hvilke tidspunkter på døgnet som algortimen har været slået fra 
+        ControlManual[Testcounter] = manual       
 
 
         # StartPeakshave variablen starter peak shaving når -30 grader er nået og effekten er over middag/aften threshhold
         # Gør også så containeren maks kan være slukket 3 timer ad gangen. 
         if (Effektdag[Testcounter] > Middagthresh and (Testcounter >= MstartCool + 1) and (Testcounter < MstartCool + 4)):
-            StartPeakshaving = 1    
+            StartPeakshaving = 1   
         elif (Effektdag[Testcounter] > Aftenthresh and (Testcounter >= AstartCool + 1) and (Testcounter < AstartCool + 4)):
             StartPeakshaving = 1
         else :
             StartPeakshaving = 0  
 
-        # Meget simpel umulator af temeraturen i containeren 
-        if (StartPeakshaving == 1):
-            tempContainer = -30 
-        else :
-            tempContainer = -20         
+        if (ControlManual[AstartCool] == 1 or ControlManual[AstartCool + 1] == 1 or ControlManual[AstartCool + 2] == 1 or ControlManual[AstartCool + 3] == 1):
+            StartPeakshaving = 0    
+        elif (ControlManual[MstartCool] == 1 or ControlManual[MstartCool + 1] == 1 or ControlManual[MstartCool + 2] == 1 or ControlManual[MstartCool + 3] == 1):
+            StartPeakshaving = 0    
 
+        # Meget simpel umulator af temeraturen i containeren 
+        #if (StartPeakshaving == 1):
+            #tempContainer = -30 
+       # else :
+           # tempContainer = -20         
+
+        
+        
+
+        
         #Sender informationerne til ISOstring hvor tilstandsændringer sker 
-        if(manual == 0):
-            ISOstring = ISO10368Lib.containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Testcounter)
-        else:
-            #noget smart
-            print("test123")
+        
+        ISOstring = ISO10368Lib.containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Testcounter, manual, ControlManual)
+        #else:
+
+
 
         ourCounter = 0
 

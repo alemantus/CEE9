@@ -286,6 +286,10 @@ while(1):
         #print(round(t1,2))
         #clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
         #clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2,2), qos=0, retain=False)
+
+
+        clientOwn.publish("/container"+RCDid+"/effektTotal",Effekttotal, qos=0, retain=False)
+
         if(tempList[0] != "" and tempList[1] != "" and tempList[2] != "" and tempList[3] == 1):
             clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/lowerBound, msg.payload    ="+str(tempList[0]), qos=0, retain=False)
             clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/upperBound, msg.payload="+str(tempList[1]), qos=0, retain=False)

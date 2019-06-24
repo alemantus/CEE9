@@ -25,6 +25,7 @@ connectControl = 0
 kickControl = 0
 ourCounter = 0
 StartTime = 0
+manual = 0
 
 Switch = 1
 preHour = 0
@@ -95,32 +96,28 @@ while(1):
         print("Connected to own broker")
         clientOwn.publish("/container"+RCDid+"/on_connectOwn", "Connected to Own", qos=0, retain=False)
 
-        clientOwn.subscribe("/container"+RCDid+"/lowerBound")
-        clientOwn.subscribe("/container"+RCDid+"/upperBound")
         clientOwn.subscribe("/container"+RCDid+"/setPoint")
         clientOwn.subscribe("/container"+RCDid+"/kick")
+        clientOwn.subscribe("/container"+RCDid+"/manual")
 
     def on_messageOwn(client, userdata, msg):
         global kickControl
+        global manual
 
-        if(str(msg.topic) == "/container"+RCDid+"/lowerBound"):
-            tempList[0] = int(msg.payload)
-            tempList[3] = 0
-        elif(str(msg.topic) == "/container"+RCDid+"/upperBound"):
-            tempList[1] = int(msg.payload)
-            tempList[3] = 0
-        elif(str(msg.topic) == "/container"+RCDid+"/setPoint"):
+        if(str(msg.topic) == "/container"+RCDid+"/setPoint"):
             tempList[2] = int(msg.payload)
             tempList[3] = 0
         elif(str(msg.topic) == "/container"+RCDid+"/kick"):
             tempList[3] = 1
+        elif(str(msg.topic) == "/container"+RCDid+"/manual"):
+            manual = int(msg.payload)
+            print("asd")
+            print(int(msg.payload))
 
 
     def on_publishOwn(client,userdata,result):
         print("data published \n")
         pass
-
-
 
     if (connectControl == 0):
         ###### Starting DTU broker connection ######
@@ -271,9 +268,12 @@ while(1):
             tempContainer = -20         
 
         #Sender informationerne til ISOstring hvor tilstandsændringer sker 
-        ISOstring = ISO10368Lib.containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Testcounter)
-        
-        ##
+        if(manual == 0):
+            ISOstring = ISO10368Lib.containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Testcounter)
+        else:
+            #noget smart
+            print("test123")
+
         ourCounter = 0
 
         #bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
@@ -287,9 +287,8 @@ while(1):
         #clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
         #clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2,2), qos=0, retain=False)
 
-
-        clientOwn.publish("/container"+RCDid+"/effektTotal",Effekttotal, qos=0, retain=False)
-
+        
+        clientOwn.publish("/container"+RCDid+"/effektTotal", Effekttotal, qos=0, retain=False)
         if(tempList[0] != "" and tempList[1] != "" and tempList[2] != "" and tempList[3] == 1):
             clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/lowerBound, msg.payload    ="+str(tempList[0]), qos=0, retain=False)
             clientOwn.publish("/container"+RCDid+"/recieved", "topic=/container"+RCDid+"/upperBound, msg.payload="+str(tempList[1]), qos=0, retain=False)

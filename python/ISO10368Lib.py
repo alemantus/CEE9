@@ -16,7 +16,7 @@ def ISOstring(temp):
     return bin(tempISO).replace('0b', '').zfill(8)
 
 
-def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Testcounter, Manuel, ControlManual):
+def containerString(Startcool, tempContainer, StartPeakshaving, Testcounter, Manuel, ControlManual):
     #Bestemmer hvornår containeren skal køle til -30 grader.     
     #if (now.hour >= int(MstartCool) and now.hour <= int(MstartCool) + 1):
     #    Startcool = 1
@@ -26,18 +26,9 @@ def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Tes
      #   Startcool = 0
 
     #Samme formål som overstående bare til demoen. Dette betyder timer = sekunder
-    if (Testcounter >= int(MstartCool) and Testcounter <= int(MstartCool) + 1):
-        Startcool = 1
-    elif (Testcounter >= int(AstartCool) and Testcounter <= int(AstartCool) + 1):
-        Startcool = 1
-    else:
-        Startcool = 0
     
     
-
-
-    print("Klokken er:" + " " + str(Testcounter)) 
-
+    #print("Startcool er: " + str(Startcool))
     if(StartPeakshaving == 1 and Manuel == 0):
         tempDesired = -20
         Sair = -25
@@ -46,7 +37,7 @@ def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Tes
         SairISO = "0" + ISOstring(Sair)
         RairISO = "0" + ISOstring(Rair)
         # LED skal lyse i stedet for printout 
-        test1 = "Peak-shaving i gang - Containeren slukkes"
+        test1 = "Peak-shaving i gang - Containeren slukkes i 2 timer"
         print(test1)
         led18.off()
         led30.off()
@@ -74,13 +65,12 @@ def containerString(MstartCool, AstartCool, tempContainer, StartPeakshaving, Tes
         SairISO = ISOstring(Sair)
         RairISO = ISOstring(Rair)
         # LED skal lyse i stedet for printout 
-        test3 = "Containerens setpoint ændres til -30 grader (Nedkølingstid 1 time)"
+        test3 = "Containerens setpoint ændres til -30 grader (Nedkølingstid 1.5 time)"
         print(test3)
         led18.off()
         led30.off()
         ledNed.off()
-        ledOp.on() 
-        Startcool = 0  
+        ledOp.on()  
     elif (tempContainer <= -30):
         tempDesired = -30
         Sair = -30

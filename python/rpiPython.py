@@ -276,16 +276,17 @@ while(1):
 
         ourCounter = 0
 
-        #bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
-        #bme76.set_mode(bme280.MODE_FORCED)
-        #t1, p1, h1 = bme76.get_data()
+        bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
+        bme76.set_mode(bme280.MODE_FORCED)
+        t1, p1, h1 = bme76.get_data()
 
-        #bme77 = bme280.Bme280(i2c_bus=1,sensor_address=0x77)
-        #bme77.set_mode(bme280.MODE_FORCED)
-        #t2, p2, h2 = bme77.get_data()
-        #print(round(t1,2))
-        #clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
-        #clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2,2), qos=0, retain=False)
+        bme77 = bme280.Bme280(i2c_bus=1,sensor_address=0x77)
+        bme77.set_mode(bme280.MODE_FORCED)
+        t2, p2, h2 = bme77.get_data()
+        print(round(t1,2))
+        print(round(t2,2))
+        clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
+        clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2,2), qos=0, retain=False)
 
         
         clientOwn.publish("/container"+RCDid+"/effektTotal", Effekttotal, qos=0, retain=False)

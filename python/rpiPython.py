@@ -13,7 +13,7 @@ import datetime
 
 # define container id when starting program
 RCDid = sys.argv[1]
-
+tempEnable = sys.argv[2]
 # acces token for DTU mqtt broker
 token = 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJSRkRFTU8iLCJpYXQiOjE1NTYxNDMyMDAsImV4cCI6MTU2NzI4ODgwMCwiaXNzIjoib3JkYSIsImF1dGhvcml0aWVzIjoiVVNFUixWSVMiLCJhZGRpdGlvbmFsIjoiRVZCRSJ9.DuLZSACASb5sjfb_j6_OfZpibQxXAwy1G1JbQIczwlN2tv5TxlFx7u8PTEuP8Q-BSNoI8MY-iDoDKRcG4RXr5SeLpdXe9V0mSkQRgjdSaKt7jwN10vKC-ydXYNZ2Y4bWjv__-3cJKVl8Q8n3BZ5RnduprIwVfwZ3pOqUyq-mRRWJTOZfwBsqQfnjHUY8hgDmkCCJrKPldpV5_m6AljOFbszGFmY9sufYvQuXUTEtNboAp_xChQTNyJG9fEXhCc_Bks-qOoA5lHJoP-4WMMZZ4cwNBX78oHp__aSQkZD6oKHXyB-Sdvvs8QuobmdNHe-Qi-xjHsXOvVQXxvd8pb2hRA'
 
@@ -118,10 +118,6 @@ while(1):
             tempList[3] = 0
         elif(str(msg.topic) == "/container"+RCDid+"/kick"):
             tempList[3] = 1
-        elif(str(msg.topic) == "/container"+RCDid+"/manual"):
-            manual = int(msg.payload)
-            print("asd")
-            print(int(msg.payload))
 
 
     def on_publishOwn(client,userdata,result):
@@ -353,19 +349,28 @@ while(1):
 
         if (Testcounter == 47 and dag == 4):
             print("Demoen er slut")
+            time.sleep(1)
+            sys.exit()
 
         ourCounter = 0
+        if(tempEnable == 1):
+            print("test")
 
-        #bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
-        #bme76.set_mode(bme280.MODE_FORCED)
-        #t1, p1, h1 = bme76.get_data()
+        
 
-        #bme77 = bme280.Bme280(i2c_bus=1,sensor_address=0x77)
-        #bme77.set_mode(bme280.MODE_FORCED)
-        #t2, p2, h2 = bme77.get_data()
+        bme76 = bme280.Bme280(i2c_bus=1,sensor_address=0x76)
+        bme76.set_mode(bme280.MODE_FORCED)
+        t1, p1, h1 = bme76.get_data()
+
+        bme77 = bme280.Bme280(i2c_bus=1,sensor_address=0x77)
+        bme77.set_mode(bme280.MODE_FORCED)
+        t2, p2, h2 = bme77.get_data()
         #print(round(t1,2))
-        #clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
-        #clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2,2), qos=0, retain=False)
+        #print(round(t2,2))
+        
+        clientOwn.publish("/container"+RCDid+"/tempInside", round(t1,2), qos=0, retain=False)
+        clientOwn.publish("/container"+RCDid+"/tempOutside", round(t2-20,2), qos=0, retain=False)
+        clientOwn.publish("/container"+RCDid+"/bitString", ISOstring, qos=0, retain=False)
 
         
         clientOwn.publish("/container"+RCDid+"/effektTotal", Effekttotal, qos=0, retain=False)
@@ -390,4 +395,4 @@ while(1):
     clientDTU.loop_start()
     clientOwn.loop_start()
     ourCounter += 1
-    time.sleep(1)
+    time.sleep(0.5)

@@ -41,7 +41,7 @@ def containerString(Startcool, tempContainer, StartPeakshaving, Testcounter, Man
         print(test1)
         led18.off()
         led30.off()
-        ledNed.on()
+        ledNed.on() #grøn
         ledOp.off()
     elif (Manuel == 1):
         tempDesired = -20
@@ -53,10 +53,10 @@ def containerString(Startcool, tempContainer, StartPeakshaving, Testcounter, Man
         # LED skal lyse i stedet for printout 
         test4 = "Containeren holdes på -18 grader (Algoritme frakoblet)"
         print(test4)
-        led18.off()
-        led30.off()
+        led18.on()
+        led30.on()
         ledNed.on()
-        ledOp.off()
+        ledOp.on()
     elif (Startcool == 1):
         tempDesired = -30
         Sair = 75
@@ -70,7 +70,7 @@ def containerString(Startcool, tempContainer, StartPeakshaving, Testcounter, Man
         led18.off()
         led30.off()
         ledNed.off()
-        ledOp.on()  
+        ledOp.on()  #gul
     elif (tempContainer <= -30):
         tempDesired = -30
         Sair = -30
@@ -95,7 +95,7 @@ def containerString(Startcool, tempContainer, StartPeakshaving, Testcounter, Man
         # LED skal lyse i stedet for printout 
         test5 = "Containeren holdes på -18 grader (Normal tilstand)"
         print(test5)
-        led18.on()
+        led18.on() #første rød
         led30.off()
         ledNed.off()
         ledOp.off()   
